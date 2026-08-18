@@ -215,6 +215,27 @@ docker build -t churn-analyst .
 docker run --rm -p 8501:8501 --env-file .env churn-analyst
 ```
 
+## Deploy (Streamlit Community Cloud — free)
+
+```bash
+# 1. Push (the origin remote is already configured):
+#    needs a GitHub token: github.com/settings/tokens → classic → 'repo' scope
+git push -u origin main
+```
+
+2. Go to **share.streamlit.io** → *New app* → repo `ahmad9022032/autonomous-churn-analyst`,
+   branch `main`, main file `app/streamlit_app.py`.
+3. *Advanced settings → Secrets* — paste (these become environment variables; the key
+   never belongs in the public repo):
+
+```toml
+LLM_API_KEY = "gsk_your_groq_key"
+LLM_BASE_URL = "https://api.groq.com/openai/v1"
+LLM_MODEL = "openai/gpt-oss-120b"
+```
+
+4. Deploy, then paste the app URL into the header of this README.
+
 ## AI tool use (disclosure)
 
 Built with Claude Code (Anthropic) as a pair-programming agent: it implemented modules,
