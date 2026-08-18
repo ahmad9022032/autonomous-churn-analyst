@@ -6,7 +6,7 @@ tools** (a trained churn model + restricted pandas execution), **self-checks**, 
 core design goal — **never states a number it didn't actually compute**: every figure in
 every answer is verified against a ledger of computed results before it ships.
 
-> **Hosted app:** _fill in after deploy (Streamlit Community Cloud)_
+> **Hosted app:** https://ahmad9022032-autonomous-churn-analyst-appstreamlit-app-ktmenl.streamlit.app/
 > **Notebook:** [`notebooks/churn_eda_and_model.ipynb`](notebooks/churn_eda_and_model.ipynb) (Colab-compatible)
 
 ---
