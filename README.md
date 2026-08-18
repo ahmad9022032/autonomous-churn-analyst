@@ -153,6 +153,22 @@ what gets refused — *is* the deliverable. A framework would hide exactly the p
 assessed, and hand-rolling keeps prompts small enough for free-tier limits. The trade-off
 is that memory, streaming, and parallel tool calls are as simple as I made them, no freer.
 
+## Performance & rate-limit behavior
+
+The brief makes free-tier throttling a design constraint, not a nuisance. Per-question
+budgets (all in `AgentConfig`): **≤12 LLM calls** (exhaustion → honest partial from
+computed facts only), ≤8 tool rounds, ≤2 verification revisions, 5s sandbox timeout.
+On a 429 the client honors `Retry-After`, else jittered exponential backoff, max 5
+attempts, then an explicit "provider unreachable — nothing fabricated" reply. Token
+thrift: <~500-token system prompt, tool results truncated to 1.5k chars, memory keeps
+only (question, answer) pairs, answers capped at 1,024 tokens, temperature 0.
+
+Observed on Groq's free tier: typical questions run **2–3 LLM calls, 1–2 tool steps,
+~1.6–8s**; the worst live case absorbed a mid-question 429 plus two verification
+revisions (6 calls, ~95s) and degraded honestly instead of failing. Every answer
+displays its own telemetry (e.g. `2 LLM calls · 1 tool steps · 3.12s · 7/7 figures
+verified`).
+
 ## Sandbox (restricted execution)
 
 Threat model: contain LLM mistakes and prompt-injected mischief — filesystem/network/
