@@ -6,9 +6,15 @@ determined human adversary (documented in the README). Defense in depth:
 
 1. AST gate (whitelist of node types, name/attribute blacklists) in the parent
 2. Stripped namespace (df copy, whitelisted pd/np proxies, minimal builtins)
-3. A warm worker *process*: survives infinite loops (terminate on timeout) and
+3. A warm worker *process*: survives infinite loops (killed on timeout) and
    memory blow-ups, and — unlike signal.SIGALRM — also works when called from
    a non-main thread, which is how Streamlit runs us.
+
+The worker is a plain subprocess (`python -m churn_agent.sandbox`) speaking
+length-framed pickle over stdin/stdout — deliberately NOT `multiprocessing`,
+whose spawn start-method re-executes the parent's main module and breaks when
+the parent is stdin/-c launched or oddly wrapped. POSIX-only timeout (select
+on the child fd), which covers macOS dev, Docker, and Streamlit Cloud.
 
 Execution semantics: like a REPL cell, the value of the last expression is the
 result. Numeric "facts" are harvested from the result before truncation and
@@ -18,7 +24,12 @@ feed the numeric-provenance ledger.
 from __future__ import annotations
 
 import ast
-import multiprocessing as mp
+import os
+import pickle
+import select
+import struct
+import subprocess
+import sys
 from typing import Any
 
 MAX_REPR_CHARS = 2000
@@ -234,17 +245,22 @@ def _execute(code: str, base_df) -> dict:
     }
 
 
-def _worker_main(conn) -> None:
+def _serve_stdio() -> None:
+    """Worker entrypoint: length-framed pickle requests on stdin, replies on stdout."""
     from churn_agent.data import get_dataframe
 
+    stdin = sys.stdin.buffer
+    stdout = sys.stdout.buffer
     base_df = get_dataframe()
+    ready = pickle.dumps({"status": "ready"})
+    stdout.write(struct.pack(">I", len(ready)) + ready)
+    stdout.flush()
     while True:
-        try:
-            code = conn.recv()
-        except (EOFError, KeyboardInterrupt):
+        header = stdin.read(4)
+        if len(header) < 4:
             break
-        if code is None:
-            break
+        (length,) = struct.unpack(">I", header)
+        code = pickle.loads(stdin.read(length))
         try:
             envelope = _execute(code, base_df)
         except Exception as exc:  # belt and braces: never kill the serve loop
@@ -254,34 +270,58 @@ def _worker_main(conn) -> None:
                 "facts": [],
                 "hint": None,
             }
-        conn.send(envelope)
+        payload = pickle.dumps(envelope)
+        stdout.write(struct.pack(">I", len(payload)))
+        stdout.write(payload)
+        stdout.flush()
 
 
 # ---------------------------------------------------------------- parent side
 class Sandbox:
-    """Owns the warm worker process; respawns it lazily after kills/crashes."""
+    """Owns the warm worker subprocess; respawns it lazily after kills/crashes."""
 
     def __init__(self, timeout_s: float = 5.0):
         self.timeout_s = timeout_s
-        self._ctx = mp.get_context("spawn")
-        self._proc = None
-        self._conn = None
+        self._proc: subprocess.Popen | None = None
 
     def _ensure_worker(self) -> None:
-        if self._proc is not None and self._proc.is_alive():
+        if self._proc is not None and self._proc.poll() is None:
             return
-        self._conn, child_conn = self._ctx.Pipe()
-        self._proc = self._ctx.Process(
-            target=_worker_main, args=(child_conn,), daemon=True
+        self._proc = subprocess.Popen(
+            [sys.executable, "-m", "churn_agent.sandbox"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            bufsize=0,  # raw pipes so select() on the fd is accurate
         )
-        self._proc.start()
+        # readiness handshake with a generous allowance, so pandas import +
+        # dataframe load never eats into a real call's timeout budget
+        header = self._read_exact(4, 30.0)
+        if header is None:
+            self._kill()
+            raise RuntimeError("sandbox worker failed to start within 30s")
+        (length,) = struct.unpack(">I", header)
+        self._read_exact(length, 30.0)
 
     def _kill(self) -> None:
         if self._proc is not None:
-            self._proc.terminate()
-            self._proc.join(timeout=2)
+            self._proc.kill()
+            self._proc.wait(timeout=2)
         self._proc = None
-        self._conn = None
+
+    def _read_exact(self, n: int, deadline_s: float) -> bytes | None:
+        """Read exactly n bytes from the worker, or None on timeout."""
+        fd = self._proc.stdout.fileno()
+        chunks = b""
+        while len(chunks) < n:
+            ready, _, _ = select.select([fd], [], [], deadline_s)
+            if not ready:
+                return None
+            chunk = os.read(fd, n - len(chunks))
+            if not chunk:  # worker died
+                raise BrokenPipeError
+            chunks += chunk
+        return chunks
 
     def run(self, code: str) -> dict:
         rejection = validate_code(code)
@@ -294,10 +334,16 @@ class Sandbox:
             }
         self._ensure_worker()
         try:
-            self._conn.send(code)
-            if self._conn.poll(self.timeout_s):
-                return self._conn.recv()
-        except (BrokenPipeError, EOFError, OSError):
+            payload = pickle.dumps(code)
+            self._proc.stdin.write(struct.pack(">I", len(payload)) + payload)
+            self._proc.stdin.flush()
+            header = self._read_exact(4, self.timeout_s)
+            if header is not None:
+                (length,) = struct.unpack(">I", header)
+                body = self._read_exact(length, self.timeout_s)
+                if body is not None:
+                    return pickle.loads(body)
+        except (BrokenPipeError, OSError):
             self._kill()
             return {
                 "status": "error",
@@ -314,9 +360,13 @@ class Sandbox:
         }
 
     def close(self) -> None:
-        if self._conn is not None:
+        if self._proc is not None:
             try:
-                self._conn.send(None)
+                self._proc.stdin.close()
             except OSError:
                 pass
         self._kill()
+
+
+if __name__ == "__main__":
+    _serve_stdio()
