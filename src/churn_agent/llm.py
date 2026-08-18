@@ -94,6 +94,13 @@ class LLMClient:
                     openai.APIConnectionError, openai.APITimeoutError) as exc:
                 last_error = exc
                 self._sleep(exc, attempt)
+            except (openai.NotFoundError, openai.AuthenticationError,
+                    openai.PermissionDeniedError, openai.BadRequestError) as exc:
+                # configuration problems don't improve with retries
+                raise LLMUnavailable(
+                    f"provider rejected the request ({type(exc).__name__}): {exc}. "
+                    "Check LLM_MODEL / LLM_API_KEY in .env"
+                ) from exc
         raise LLMUnavailable(f"provider kept failing after {self.MAX_ATTEMPTS} attempts: {last_error}")
 
     @staticmethod

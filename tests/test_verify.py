@@ -62,6 +62,15 @@ def test_derived_ratio_matches():
     assert verify_draft("That is 26.5% of the base.", ledger_with(1869.0, 7043.0), "q").ok
 
 
+def test_low_precision_figures_cannot_ride_on_derived_collisions():
+    # Live-testing catch: "38%" collided with the unrelated ratio 1473/3875.
+    # Two-digit figures must match a single computed fact, not a derivation.
+    ledger = ledger_with(1473.0, 3875.0)
+    assert not verify_draft("About 38% of all customers.", ledger, "q").ok
+    # ...but the precise form still verifies via the ratio (precision earns trust)
+    assert verify_draft("That is 38.0% as many.", ledger, "q").ok
+
+
 def test_question_numbers_whitelisted():
     report = verify_draft(
         "Here are the 3 customers with tenure under 12 months.",

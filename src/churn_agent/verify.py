@@ -146,11 +146,22 @@ def _candidates(value: float) -> list[float]:
     return out
 
 
+def _sig_digits(mention: NumberMention) -> int:
+    digits = re.sub(r"[^\d]", "", mention.raw).lstrip("0")
+    return len(digits)
+
+
 def _matches_ledger(mention: NumberMention, values: list[float]) -> bool:
     for v in values:
         if any(_displays_as(mention, c) for c in _candidates(v)):
             return True
-    # pairwise derived facts (ratio, difference, sum, share-of-total)
+    # Pairwise derived facts (ratio, difference, sum, share-of-total) — but only
+    # for mentions with >=3 significant digits: with dozens of facts there are
+    # ~16k derived candidates, and a 2-digit figure like "38" collides with
+    # SOME unrelated ratio far too easily (observed in live testing). Precision
+    # earns trust; vague figures must come from a single computed fact.
+    if _sig_digits(mention) < 3:
+        return False
     pool = values[-MAX_PAIRWISE_FACTS:]
     for a, b in itertools.permutations(pool, 2):
         derived = [a - b, a + b]

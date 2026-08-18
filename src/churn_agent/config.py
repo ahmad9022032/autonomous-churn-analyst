@@ -25,7 +25,7 @@ class AgentConfig:
 
     api_key: str = ""
     base_url: str = "https://api.groq.com/openai/v1"
-    model: str = "llama-3.3-70b-versatile"
+    model: str = "openai/gpt-oss-120b"
     force_json_mode: bool = False
     max_tool_rounds: int = 8
     max_llm_calls: int = 12

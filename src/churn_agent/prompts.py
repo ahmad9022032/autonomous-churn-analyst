@@ -31,8 +31,10 @@ def revision_prompt(unmatched: list[str], ledger_render: str) -> str:
     figures = ", ".join(unmatched)
     return (
         f"VERIFICATION FAILED. These figures in your draft do not match any computed "
-        f"result: {figures}. You may ONLY state numbers from the computed facts below, "
-        f"or call a tool to compute what is missing. Rewrite your answer now.\n\n"
+        f"result: {figures}. Rewrite your answer now, quoting numbers EXACTLY as they "
+        f"appear in the computed facts below (light rounding is fine, approximations "
+        f"are not). If a number you need is missing, call a tool to compute it — "
+        f"otherwise leave it out.\n\n"
         f"Computed facts so far:\n{ledger_render}"
     )
 
