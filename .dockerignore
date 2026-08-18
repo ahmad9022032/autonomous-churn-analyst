@@ -1,0 +1,13 @@
+.venv/
+.git/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.ipynb_checkpoints/
+notebooks/
+tests/
+.DS_Store
+.claude/
+ATS_AI_Engineer_Assessment_Brief.pdf
