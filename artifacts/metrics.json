@@ -1,0 +1,10 @@
+{
+  "PR-AUC": 0.6305,
+  "ROC-AUC": 0.8395,
+  "Brier": 0.1389,
+  "recall@top-10%": 0.2754,
+  "precision@top-10%": 0.7357,
+  "lift@top-10%": 2.77,
+  "churn base rate": 0.2654,
+  "best_C": 0.1
+}
