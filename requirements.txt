@@ -1,0 +1,10 @@
+# Runtime requirements (also consumed by Streamlit Community Cloud)
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+joblib>=1.4
+openai>=1.40
+python-dotenv>=1.0
+rich>=13.7
+streamlit>=1.37
+matplotlib>=3.9
