@@ -8,8 +8,14 @@ st.status block, so the user can watch the agent refuse to invent numbers.
 from __future__ import annotations
 
 import json
+import sys
+from pathlib import Path
 
 import streamlit as st
+
+# Belt and braces for hosts that run the app without installing the package
+# (e.g. a bare `streamlit run` outside the venv): put src/ on the path.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from churn_agent.agent import Agent, AgentEvent
 from churn_agent.config import METRICS_PATH, AgentConfig
