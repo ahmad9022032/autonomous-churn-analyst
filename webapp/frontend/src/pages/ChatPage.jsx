@@ -17,7 +17,11 @@ export default function ChatPage() {
   const [busy, setBusy] = useState(false);
   const bottom = useRef(null);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  useEffect(() => {
+    // braces matter: scrollIntoView returns a Promise in newer Chrome, and an
+    // implicit return would hand it to React as an effect-cleanup function
+    bottom.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function ask(question) {
     if (!question.trim() || busy) return;
