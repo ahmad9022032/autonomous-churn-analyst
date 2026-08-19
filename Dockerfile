@@ -14,11 +14,11 @@ RUN pip install -e ".[app]"
 
 COPY data ./data
 COPY artifacts ./artifacts
-COPY app ./app
+COPY streamlit-app ./streamlit-app
 COPY .env.example ./
 
 EXPOSE 8501
 
 # LLM_API_KEY etc. come from --env-file .env (never baked into the image)
-CMD ["streamlit", "run", "app/streamlit_app.py", \
+CMD ["streamlit", "run", "streamlit-app/streamlit_app.py", \
      "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]

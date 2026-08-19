@@ -3,7 +3,7 @@ services:
   - type: web
     name: churnsight-web
     runtime: docker
-    dockerfilePath: ./webapp/Dockerfile
+    dockerfilePath: ./react-app/Dockerfile
     dockerContext: .
     plan: free
     envVars:

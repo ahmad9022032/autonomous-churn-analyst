@@ -64,7 +64,7 @@ No column? It says so. No computation? No number. That's the whole point.
 | 🧠 | **Model as a callable tool** | Audited & cleaned dataset → logistic-regression churn model with **per-customer explanations** → `predict_churn_risk(customer_id) → {risk_score, risk_percentile, top_factors}` · committed artifact, notebook, [PDF report](notebooks/churn_model_documentation.pdf) |
 | 🤖 | **The agent** | Hand-rolled **plan → act → check** loop · 6 tools · restricted-execution sandbox · deterministic self-checks · **numeric-provenance verifier** |
 | 💻 | **Chat interface** | Streamlit chat wired **live** to the model + agent, streaming the plan / tool calls / verification verdict as they happen · CLI REPL twin |
-| ⚛️ | **React frontend + API** *(optional stage, built & deployed)* | [`webapp/`](webapp/) → **[live on Render](https://churnsight-web.onrender.com/)** — FastAPI backend streaming agent events as NDJSON + React 19 app with routed pages (Chat · Dataset · Customer Risk · What-If Lab) and reusable components, driving the **same** agent through the same tools *(free tier — first visit after idle takes ~1 min to wake)* |
+| ⚛️ | **React frontend + API** *(optional stage, built & deployed)* | [`react-app/`](react-app/) → **[live on Render](https://churnsight-web.onrender.com/)** — FastAPI backend streaming agent events as NDJSON + React 19 app with routed pages (Chat · Dataset · Customer Risk · What-If Lab) and reusable components, driving the **same** agent through the same tools *(free tier — first visit after idle takes ~1 min to wake)* |
 
 ```mermaid
 flowchart LR
@@ -179,7 +179,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[app,dev]"
 cp .env.example .env        # add your free Groq key → console.groq.com
 
-streamlit run app/streamlit_app.py                        # 💻 chat UI
+streamlit run streamlit-app/streamlit_app.py              # 💻 chat UI
 python -m churn_agent.cli                                 # 🖥️ terminal REPL, live verify trace
 python -m churn_agent.cli "average churn risk by contract"  # one-shot
 python -m churn_agent.train                               # 🔁 reproduce the model artifact
@@ -193,7 +193,8 @@ pytest                                                    # ✅ 79 tests — all
 <summary><b>📁 Project structure</b></summary>
 
 ```
-├── app/streamlit_app.py        # chat UI — pure renderer of agent events
+├── streamlit-app/              # 💻 the Streamlit chat app (pure renderer of agent events)
+├── react-app/                  # ⚛️ the React app: FastAPI backend + React frontend
 ├── src/churn_agent/
 │   ├── data.py                 # audit + cleaning with executable invariants
 │   ├── model.py                # pipeline, explanations, hypothetical normalization
@@ -241,8 +242,17 @@ Built with **Claude Code** (Anthropic) as a pair-programming agent: it implement
 
 **What I had to figure out:** Groq's lineup had rotated (the brief's Llama models are gone → model became an env var with hardened config errors) · `multiprocessing` spawn re-executes the parent's main module (→ framed-pickle subprocess sandbox) · Groq surfaces model-side tool-call flubs as 400s (→ routed into the JSON-fallback counter) · pandas 3.0 string-dtype changes (→ portable idioms so the notebook also runs on Colab's pandas 2.x).
 
-**With more time:** a critic agent re-deriving each claimed figure independently (the ledger makes that cheap) · a formal eval set with measured hallucination rate (the verification reports already produce the raw material) · charts inside answers.
+**The extra time went into the optional React stage.** Once the required pieces were done and deployed, I used the remaining time to build the React + FastAPI app (`react-app/`) with Claude's help and deploy it on Render — which turned out to be a real test of the architecture: because the agent was a clean importable package with an event stream, the entire second interface needed zero changes to the core. Still on the wish list: a critic agent re-deriving each claimed figure independently (the ledger makes that cheap), and a formal eval set with a measured hallucination rate.
 
 ## ⏱️ Time log (honest)
 
-Roughly a focused day, AI-assisted end-to-end: ~1h brief analysis, dataset profiling, planning · ~1.5h cleaning + notebook · ~0.5h production model module · ~2h sandbox + tools (including the multiprocessing→subprocess rewrite) · ~2h verifier + agent loop + offline tests · ~1h live testing against Groq (caught the verifier false-accept, the retired-model issue, and the tool-call-validation flake) · ~1h Streamlit, README, Docker, deploy. **Stopped at:** no critic agent, no eval-set report, no React frontend — listed as future work rather than half-built.
+Roughly ~10 focused hours for the required scope, AI-assisted end-to-end, plus extra time for the optional stage:
+
+- **Studying & understanding the problem** — reading the brief, profiling the dataset — *~1h*
+- **Planning** — architecture, tools & techniques, what to build in what order — *~1h*
+- **Model training & evaluation** — data cleaning, notebook EDA, model comparison, metric justification — *~2h*
+- **Building the agent** — sandbox, tools, provenance verifier, plan-act-check loop, offline tests, live testing against Groq — *~3.5h*
+- **Building the Streamlit app** — chat UI wired to the agent, error handling — *~1h*
+- **GitHub, README & documentation** — incremental commits, README, PDF report — *~1h*
+- **Deployment** — Streamlit Cloud, Dockerfile — *~0.5h*
+- **Extra time** — built the React + FastAPI app with Claude and deployed it on Render — *~2h*
