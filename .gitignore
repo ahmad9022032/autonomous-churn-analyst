@@ -19,3 +19,6 @@ build/
 
 # assessment brief (company document, not project work)
 ATS_AI_Engineer_Assessment_Brief.pdf
+
+# Pages working files (PDF export is the published artifact)
+*.pages
