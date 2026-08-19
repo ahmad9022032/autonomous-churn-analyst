@@ -101,6 +101,12 @@ class LLMClient:
                     f"provider rejected the request ({type(exc).__name__}): {exc}. "
                     "Check LLM_MODEL / LLM_API_KEY in .env"
                 ) from exc
+            except openai.APIStatusError as exc:
+                # any other HTTP status (413 payload too large, 409, ...) —
+                # surface as an honest failure rather than an unhandled traceback
+                raise LLMUnavailable(
+                    f"provider error {getattr(exc, 'status_code', '?')}: {exc}"
+                ) from exc
         raise LLMUnavailable(f"provider kept failing after {self.MAX_ATTEMPTS} attempts: {last_error}")
 
     @staticmethod

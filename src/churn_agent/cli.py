@@ -93,7 +93,13 @@ def main() -> None:
                 console.print("[dim]nothing verified yet[/]")
             continue
 
-        last_result = agent.ask(question, on_event=render)
+        try:
+            last_result = agent.ask(question, on_event=render)
+        except Exception as exc:  # last resort: never show the user a traceback
+            console.print(f"[red]unexpected error:[/] {exc} — nothing was fabricated; please try again")
+            if one_shot:
+                break
+            continue
         verdict = ""
         if last_result.verification:
             verdict = f"  [dim]· {last_result.verification.summary()}[/]"
