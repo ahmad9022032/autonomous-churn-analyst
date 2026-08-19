@@ -35,6 +35,20 @@ npm install
 npm run dev          # → http://localhost:5173  (proxies /api to :8000)
 ```
 
+## Deploy (Render free tier — one container, one URL)
+
+The backend serves the built React app itself in production (SPA fallback included),
+so the whole webapp is a single Docker service defined by [`webapp/Dockerfile`](Dockerfile)
+and the repo-root [`render.yaml`](../render.yaml) blueprint:
+
+1. **render.com** → *Sign up with GitHub* (free, no card).
+2. *New +* → **Blueprint** → connect `ahmad9022032/autonomous-churn-analyst` — `render.yaml` is auto-detected.
+3. When prompted, paste your **LLM_API_KEY** (the Groq key) → *Apply*.
+4. First build takes ~5–8 min (node build + pip install). Your app lands at `https://churnsight-web.onrender.com`-style URL.
+
+> Free-tier caveat: the service sleeps after ~15 min idle; the first request after
+> a sleep takes up to a minute to wake. Fine for an assessment demo; stated honestly.
+
 ## Pages
 
 | Page | What it does |

@@ -14,9 +14,12 @@ import json
 import queue
 import threading
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from churn_agent.agent import AgentEvent, AgentResult
 from churn_agent.config import METRICS_PATH, AgentConfig
@@ -159,3 +162,21 @@ def chat(req: ChatRequest) -> StreamingResponse:
 def reset(req: ResetRequest) -> dict:
     sessions.reset(req.session_id)
     return {"ok": True}
+
+
+# ------------------------------------------------------------------ static SPA
+# In production (Docker/Render) the built React app is served by this same
+# process: /assets from the Vite build, everything non-API falls back to
+# index.html for client-side routing. In dev, Vite serves the UI instead.
+_DIST = Path(__file__).resolve().parents[1] / "frontend" / "dist"
+if _DIST.exists():
+    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str):
+        if path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="unknown API route")
+        candidate = _DIST / path
+        if path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_DIST / "index.html")

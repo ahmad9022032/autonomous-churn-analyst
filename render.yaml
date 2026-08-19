@@ -1,0 +1,15 @@
+# One-click blueprint for Render: https://dashboard.render.com/blueprints
+services:
+  - type: web
+    name: churnsight-web
+    runtime: docker
+    dockerfilePath: ./webapp/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: LLM_API_KEY
+        sync: false # set in the Render dashboard — never committed
+      - key: LLM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: LLM_MODEL
+        value: openai/gpt-oss-120b
