@@ -196,6 +196,21 @@ class Agent:
                     self._json_mode = True
                     emit(AgentEvent("self_check_retry", {"note": "switching to JSON tool fallback"}))
 
+                if all(tc.parse_error and not tc.name for tc in resp.tool_calls):
+                    # provider-side generation flake (no usable call came back):
+                    # keep it OUT of the provider-bound history — an empty
+                    # function name would 400 the next request
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": "Your tool call was malformed and was not "
+                            "executed. Emit one valid tool call, or answer with "
+                            "what you already have.",
+                        }
+                    )
+                    emit(AgentEvent("self_check_retry", {"note": "provider returned a malformed tool call — retrying"}))
+                    continue
+
                 messages.append(
                     {
                         "role": "assistant",

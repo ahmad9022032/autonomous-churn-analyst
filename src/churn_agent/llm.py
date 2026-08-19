@@ -101,8 +101,24 @@ class LLMClient:
                     openai.APIConnectionError, openai.APITimeoutError) as exc:
                 last_error = exc
                 self._sleep(exc, attempt)
+            except openai.BadRequestError as exc:
+                # Groq surfaces model-side tool-call flubs as 400 "tool call
+                # validation failed" (with failed_generation) — that's a flaky
+                # generation, not a config error: report it as a malformed tool
+                # call so the agent's counter can engage the JSON fallback.
+                text = str(exc).lower()
+                if "tool call validation" in text or "failed_generation" in text:
+                    self.calls_made += 1
+                    return LLMResponse(
+                        content=None,
+                        tool_calls=[ToolCall(id="malformed", name="", args={}, parse_error=True)],
+                    )
+                raise LLMUnavailable(
+                    f"provider rejected the request (BadRequestError): {exc}. "
+                    "Check LLM_MODEL / LLM_API_KEY in .env"
+                ) from exc
             except (openai.NotFoundError, openai.AuthenticationError,
-                    openai.PermissionDeniedError, openai.BadRequestError) as exc:
+                    openai.PermissionDeniedError) as exc:
                 # configuration problems don't improve with retries
                 raise LLMUnavailable(
                     f"provider rejected the request ({type(exc).__name__}): {exc}. "
