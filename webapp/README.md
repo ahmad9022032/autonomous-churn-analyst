@@ -1,5 +1,7 @@
 # ChurnSight Web — React frontend + FastAPI backend
 
+> **Live:** https://churnsight-web.onrender.com/ *(free tier — wakes in ~1 min after idle)*
+
 The optional Stage 2 "extra marks" build: a React app with proper pages, components
 and API integration. It behaves **exactly** like the Streamlit app because the
 backend is a thin wrapper importing the *same* `churn_agent` package — same agent

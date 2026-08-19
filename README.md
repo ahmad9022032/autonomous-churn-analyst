@@ -7,6 +7,7 @@
 *Ask it anything about 7,043 telecom customers — it plans, computes with real tools,<br>self-checks, and every figure in every answer is verified against an actually-computed result.*
 
 [![Live App](https://img.shields.io/badge/🚀_Live_Demo-Streamlit_Cloud-FF4B4B?style=for-the-badge)](https://ahmad9022032-autonomous-churn-analyst-appstreamlit-app-ktmenl.streamlit.app/)
+[![React App](https://img.shields.io/badge/⚛️_React_App-Render-46E3B7?style=for-the-badge)](https://churnsight-web.onrender.com/)
 
 ![Python](https://img.shields.io/badge/python-3.12+-3776AB?logo=python&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-LogisticRegression-F7931E?logo=scikitlearn&logoColor=white)
@@ -63,7 +64,7 @@ No column? It says so. No computation? No number. That's the whole point.
 | 🧠 | **Model as a callable tool** | Audited & cleaned dataset → logistic-regression churn model with **per-customer explanations** → `predict_churn_risk(customer_id) → {risk_score, risk_percentile, top_factors}` · committed artifact, notebook, [PDF report](notebooks/churn_model_documentation.pdf) |
 | 🤖 | **The agent** | Hand-rolled **plan → act → check** loop · 6 tools · restricted-execution sandbox · deterministic self-checks · **numeric-provenance verifier** |
 | 💻 | **Chat interface** | Streamlit chat wired **live** to the model + agent, streaming the plan / tool calls / verification verdict as they happen · CLI REPL twin |
-| ⚛️ | **React frontend + API** *(optional stage, built)* | [`webapp/`](webapp/) — FastAPI backend streaming agent events as NDJSON + React 19 app with routed pages (Chat · Dataset · Customer Risk · What-If Lab) and reusable components, driving the **same** agent through the same tools |
+| ⚛️ | **React frontend + API** *(optional stage, built & deployed)* | [`webapp/`](webapp/) → **[live on Render](https://churnsight-web.onrender.com/)** — FastAPI backend streaming agent events as NDJSON + React 19 app with routed pages (Chat · Dataset · Customer Risk · What-If Lab) and reusable components, driving the **same** agent through the same tools *(free tier — first visit after idle takes ~1 min to wake)* |
 
 ```mermaid
 flowchart LR
