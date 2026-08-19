@@ -157,7 +157,11 @@ def _harvest_facts(result: Any) -> list[dict]:
             add(str(key), val)
     elif isinstance(result, (list, tuple)):
         for i, val in enumerate(result):
-            add(f"item[{i}]", val)
+            if isinstance(val, dict):  # list of records, e.g. .to_dict('records')
+                for key, inner in val.items():
+                    add(f"{key}[{i}]", inner)
+            else:
+                add(f"item[{i}]", val)
     elif isinstance(result, (int, float, np.generic)):
         add("result", result)
     return facts
@@ -248,10 +252,18 @@ def _execute(code: str, base_df) -> dict:
 def _serve_stdio() -> None:
     """Worker entrypoint: length-framed pickle requests on stdin, replies on stdout."""
     from churn_agent.data import get_dataframe
+    from churn_agent.model import get_model
 
     stdin = sys.stdin.buffer
     stdout = sys.stdout.buffer
-    base_df = get_dataframe()
+    base_df = get_dataframe().copy()
+    # Expose the model's prediction for every customer as a column, so free-form
+    # queries can rank, filter, correlate and trend over model output — the
+    # "call the model, then aggregate the data, then combine" behavior.
+    model = get_model()
+    base_df["predicted_churn_risk"] = (
+        model.b["pipeline"].predict_proba(base_df[model.features])[:, 1].round(4)
+    )
     ready = pickle.dumps({"status": "ready"})
     stdout.write(struct.pack(">I", len(ready)) + ready)
     stdout.flush()

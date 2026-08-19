@@ -123,6 +123,31 @@ def test_df_mutation_does_not_leak_between_calls(box):
     assert out["facts"][0]["value"] == 7043
 
 
+def test_model_risk_column_available_for_free_form_queries(box):
+    # "call the model, then aggregate the data, then combine" as one computation
+    out = box.run(
+        "top = df.nlargest(3, 'predicted_churn_risk')\n"
+        "top[['predicted_churn_risk', 'MonthlyCharges']].mean()"
+    )
+    assert out["status"] == "ok"
+    labels = {f["label"]: f["value"] for f in out["facts"]}
+    assert 0.0 <= labels["predicted_churn_risk"] <= 1.0
+    corr = box.run("df['predicted_churn_risk'].corr(df['tenure'])")
+    assert corr["status"] == "ok"
+    assert -1.0 <= corr["facts"][0]["value"] <= 0.0  # longer tenure -> lower risk
+
+
+def test_records_list_results_yield_facts(box):
+    # .to_dict('records') outputs must feed the ledger (live-testing catch)
+    out = box.run(
+        "df.nlargest(2, 'predicted_churn_risk')"
+        "[['customerID', 'predicted_churn_risk', 'MonthlyCharges']].to_dict('records')"
+    )
+    assert out["status"] == "ok"
+    labels = [f["label"] for f in out["facts"]]
+    assert "predicted_churn_risk[0]" in labels and "MonthlyCharges[1]" in labels
+
+
 def test_timeout_kills_and_respawns(box):
     out = box.run("sum(i for i in range(10**10))")
     assert out["status"] == "timeout"

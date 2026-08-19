@@ -102,7 +102,12 @@ class FactLedger:
 
 
 def extract_numbers(text: str) -> list[NumberMention]:
-    cleaned = _CODE_SPAN.sub(lambda m: " " * len(m.group()), text)
+    # LLMs emit unicode hyphens (e.g. 5178‑LMXOP with U+2011) — normalize true
+    # hyphens/minus to '-' so ID skipping works; widen en/em dashes to spaces
+    # so numbers around them stay individually detectable.
+    cleaned = re.sub(r"[‐‑‒−]", "-", text)
+    cleaned = re.sub(r"[–—―]", " ", cleaned)
+    cleaned = _CODE_SPAN.sub(lambda m: " " * len(m.group()), cleaned)
     cleaned = _CUSTOMER_ID.sub(lambda m: " " * len(m.group()), cleaned)
     skip_spans = [m.span(1) for m in _ORDINAL.finditer(cleaned)]
     skip_spans += [m.span(1) for m in _TOP_N.finditer(cleaned)]

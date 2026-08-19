@@ -63,6 +63,8 @@ DATA_NOTES: dict[str, list[str]] = {
         "Class imbalance: 26.54% churn — shaped the evaluation-metric choice.",
         "TotalCharges is nearly tenure x MonthlyCharges (collinear) — excluded from "
         "model features, retained in the dataframe for EDA queries.",
+        "In run_python, df additionally carries predicted_churn_risk — the served "
+        "model's churn probability for each customer.",
     ],
     "checked_clean": [
         "No duplicate rows or duplicate customer IDs.",

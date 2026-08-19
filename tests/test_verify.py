@@ -23,6 +23,12 @@ def test_customer_ids_and_code_spans_ignored():
     assert ms == []
 
 
+def test_unicode_hyphen_customer_ids_ignored():
+    # LLMs emit U+2011 non-breaking hyphens inside IDs (live-testing catch)
+    ms = extract_numbers("Customer 5178‑LMXOP leads; range 18–25 months.")
+    assert [m.value for m in ms] == [18.0, 25.0]  # ID digits gone, range kept
+
+
 def test_ordinals_and_top_n_ignored():
     text = "1. First finding\n2) Second finding\nThe top 5 customers stand out."
     assert extract_numbers(text) == []
