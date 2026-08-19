@@ -1,0 +1,3 @@
+# API layer only — the agent itself comes from the repo package (pip install -e .)
+fastapi>=0.115
+uvicorn[standard]>=0.30

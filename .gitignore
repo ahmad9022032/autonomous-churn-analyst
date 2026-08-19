@@ -22,3 +22,7 @@ ATS_AI_Engineer_Assessment_Brief.pdf
 
 # Pages working files (PDF export is the published artifact)
 *.pages
+
+# frontend
+node_modules/
+webapp/frontend/dist/
