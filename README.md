@@ -242,12 +242,12 @@ Provider is a 3-variable swap (any OpenAI-compatible endpoint, e.g. OpenRouter).
 
 ## ⏱️ Time log
 
-Roughly ~10-12 focused hours for the required scope, AI-assisted end-to-end, plus extra time for the optional stage:
+Roughly ~10 focused hours for the required scope, AI-assisted end-to-end, plus extra time for the optional stage:
 
 - **Studying & understanding the problem** — reading the brief, profiling the dataset, Some research about the problem — *~1h*
 - **Planning** — architecture, tools & techniques, what to build in what order — *~1h*
 - **Model training & evaluation** — data cleaning, notebook EDA, model comparison, metric justification — *~2h*
-- **Building the agent** — sandbox, tools, provenance verifier, plan-act-check loop, offline tests, live testing against Groq — *~3.5h*
+- **Building the agent** — sandbox, tools, provenance verifier, plan-act-check loop, offline tests, live testing against Groq — *~2.5h*
 - **Building the Streamlit app** — chat UI wired to the agent, error handling, testing — *~0.5h*
 - **GitHub, README & documentation** — incremental commits, README, PDF report — *~1h*
 - **Deployment** — Streamlit Cloud, Dockerfile — *~0.5h*
