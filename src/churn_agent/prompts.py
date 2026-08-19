@@ -23,6 +23,11 @@ You do not have native tool-calling here. Reply with EXACTLY ONE JSON object and
 To call a tool:  {"thought": "<brief reasoning>", "action": "<tool_name>", "args": {...}}
 To answer:       {"thought": "<brief reasoning>", "action": "final", "answer": "<your answer>"}
 
+Use "final" ONLY after the numbers you need have appeared in a TOOL RESULT message in
+this conversation. If you need data, do not describe what you need — emit the tool
+call itself. Example first reply for a data question:
+{"thought": "churn by contract needs segment stats", "action": "segment_risk", "args": {"group_by": "Contract"}}
+
 Available tools:
 """
 

@@ -75,7 +75,12 @@ class LLMClient:
         self._client = OpenAI(api_key=config.api_key, base_url=config.base_url)
         self.calls_made = 0
 
-    def chat(self, messages: list[dict], tools: list[dict] | None = None) -> LLMResponse:
+    def chat(
+        self,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+        force_json: bool = False,
+    ) -> LLMResponse:
         import openai
 
         last_error: Exception | None = None
@@ -87,6 +92,8 @@ class LLMClient:
                     tools=tools or openai.NOT_GIVEN,
                     temperature=0,
                     max_tokens=1024,
+                    # provider-enforced JSON output in fallback mode
+                    response_format={"type": "json_object"} if force_json else openai.NOT_GIVEN,
                 )
                 self.calls_made += 1
                 return self._parse(response)
@@ -144,7 +151,7 @@ class FakeLLM:
         self.calls_made = 0
         self.seen_messages: list[list[dict]] = []
 
-    def chat(self, messages: list[dict], tools: list[dict] | None = None) -> LLMResponse:
+    def chat(self, messages: list[dict], tools: list[dict] | None = None, **kwargs) -> LLMResponse:
         self.seen_messages.append(list(messages))
         self.calls_made += 1
         if not self.script:

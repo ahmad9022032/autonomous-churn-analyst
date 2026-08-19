@@ -127,7 +127,7 @@ class Agent:
     def _chat(self, messages: list[dict]) -> LLMResponse:
         if not self._json_mode:
             return self.llm.chat(messages, TOOL_SCHEMAS)
-        resp = self.llm.chat(self._render_json_mode(messages), None)
+        resp = self.llm.chat(self._render_json_mode(messages), None, force_json=True)
         obj = parse_json_object(resp.content or "")
         if obj is None:
             return LLMResponse(content=resp.content)
@@ -248,6 +248,37 @@ class Agent:
             if draft.startswith("PLAN:"):
                 lines = draft.splitlines()
                 draft = "\n".join(lines[1:]).strip() or lines[0]
+            if not draft:
+                # never ship an empty answer (seen live: reasoning models can
+                # return empty content); nudge once per revision budget
+                if revisions < self.config.max_revisions:
+                    revisions += 1
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": "Your reply was empty. Either call a tool "
+                            "or state your final answer now.",
+                        }
+                    )
+                    emit(AgentEvent("self_check_retry", {"note": "empty reply — nudging"}))
+                    continue
+                return result(budget_exhausted_prompt(ledger.render(limit=15)), None)
+            if self._json_mode and not steps and revisions < self.config.max_revisions:
+                # JSON-mode stall guard (seen live): the model narrates what it
+                # needs instead of emitting the tool call — correct it once
+                revisions += 1
+                messages.append({"role": "assistant", "content": draft})
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": "You have not called any tool yet. If you need "
+                        'data, reply ONLY with the tool-call JSON now, e.g. '
+                        '{"action": "get_data_overview", "args": {}}. If you truly '
+                        "need nothing, restate your final answer.",
+                    }
+                )
+                emit(AgentEvent("self_check_retry", {"note": "final before any tool call — nudging"}))
+                continue
             emit(AgentEvent("draft", {"draft": draft}))
 
             report = verify_draft(draft, ledger, question)
