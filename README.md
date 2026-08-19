@@ -4,7 +4,7 @@
 
 ### An autonomous data-analyst agent that **never invents a number**
 
-*Ask it anything about 7,043 telecom customers — it plans, computes with real tools,<br>self-checks, and every figure in every answer is verified against an actually-computed result.*
+*Ask it anything about 7,043 telecom customers data it plans, computes with real tools,<br>self-checks, and every figure in every answer is verified against an actually-computed result.*
 
 [![Live App](https://img.shields.io/badge/🚀_Live_Demo-Streamlit_Cloud-FF4B4B?style=for-the-badge)](https://ahmad9022032-autonomous-churn-analyst-appstreamlit-app-ktmenl.streamlit.app/)
 [![React App](https://img.shields.io/badge/⚛️_React_App-Render-46E3B7?style=for-the-badge)](https://churnsight-web.onrender.com/)
@@ -20,7 +20,7 @@
 
 ---
 
-## 💬 See it think — a real, unedited session
+## 💬 See the reasoning unfold
 
 ```text
 you › Which 5 customers are most likely to churn, and what is their average monthly charge?
@@ -81,17 +81,17 @@ flowchart LR
     V -->|"still failing"| D["strip unverified claims /<br/>facts-only fallback"] --> A
 ```
 
-**Why no framework?** The loop's transparency — what gets retried, what gets verified, what gets *refused* — is the deliverable. A framework would hide exactly the parts being assessed, and a hand-rolled loop keeps prompts small enough for free-tier rate limits (≈250-token system prompt, 12-LLM-calls-per-question hard cap, `Retry-After`-honoring backoff). Typical question: **2–3 LLM calls, 1.6–8s**.
+**Why no framework?** The loop's transparency — what gets retried, what gets verified, what gets *refused* is the deliverable. A framework would hide exactly the parts being assessed, and a hand-rolled loop keeps prompts small enough for free-tier rate limits (≈250-token system prompt, 12-LLM-calls-per-question hard cap, `Retry-After`-honoring backoff). Typical question: **2–3 LLM calls, 1.6–8s**.
 
 ---
 
-## 🔎 The data issues I found — and how I handled them
+## 🔎 The data issues I found and how I handled them
 
-The brief deliberately doesn't say what's wrong with the file. The audit found **two real issues** — and proved everything else clean:
+The brief deliberately doesn't say what's wrong with the file. The audit found **two real issues** and proved everything else clean:
 
 | # | Finding | Decision & why |
 |---|---------|----------------|
-| 1 | **`TotalCharges` arrives as text** — 11 values are a single space. All 11 are `tenure = 0` customers, all non-churned: brand-new, **never-billed** accounts. | **Impute `0.0` and keep the rows.** Zero is the *semantically true* amount billed so far — a fact, not a guess. Keeping all 7,043 rows means every count the agent computes matches the source file — in a system graded on numeric traceability, silently dropping rows is poison. |
+| 1 | **`TotalCharges` arrives as text** — 11 values are a single space. All 11 are `tenure = 0` customers, all non-churned: brand-new, **never-billed** accounts. | **Impute `0.0` and keep the rows.** Zero is the *semantically true* amount billed so far — a fact, not a guess. Keeping all 7,043 rows means every count the agent computes matches the source file in a system graded on numeric traceability, silently dropping rows is poison. |
 | 2 | **`SeniorCitizen` encoded `0/1`** while every other binary column is `Yes/No`. | **Normalize to `Yes/No`.** Lossless; one consistent encoding for users, the agent's filters, and the model. |
 
 > [!NOTE]
@@ -130,7 +130,7 @@ Logistic regression **beat** HistGradientBoosting on CV PR-AUC (0.660 vs 0.649) 
 
 ---
 
-## 🛡️ How the agent plans — and how verification works
+## 🛡️ How the agent plans and how verification works
 
 ### Planning (multi-step, self-directed)
 
@@ -139,7 +139,7 @@ Every episode opens with a model-written plan (`PLAN: score customers → aggreg
 | Tool | What it does |
 |------|--------------|
 | `get_data_overview` | Schema, category counts, ranges, churn base rate, cleaning notes — kills nonexistent-column hallucinations |
-| `run_python` | **Restricted pandas** on `df` — which also carries `predicted_churn_risk` per customer, so *"call the model, then aggregate the data, then combine"* is one real computation |
+| `run_python` | **Restricted pandas** on `df` which also carries `predicted_churn_risk` per customer, so *"call the model, then aggregate the data, then combine"* is one real computation |
 | `predict_churn` | Risk score + percentile + top factors for an existing customer |
 | `predict_hypothetical` | Any partial profile — unspecified fields defaulted **and disclosed** |
 | `what_if` | Baseline vs projected risk under feature changes |
@@ -232,27 +232,23 @@ Provider is a 3-variable swap (any OpenAI-compatible endpoint, e.g. OpenRouter).
 
 ---
 
-## 🤝 AI tool use (disclosure)
-
-Built with **Claude Code** (Anthropic) as a pair-programming agent: it implemented modules, tests and docs under my direction — scope, stack and design decisions (model choice, metric rationale, verifier design, what to cut) were reviewed and steered by me, and I can walk through and defend any part of the submission. The git history reflects the real build order, **including the bugs found and fixed during live testing**.
-
 ## 💭 Reflection
 
-**Hardest part:** the numeric-provenance verifier. Extracting "numbers the model claims" from free text sounds trivial and isn't — percents vs fractions, rounding, complements, currency, customer IDs that look like numbers. The genuinely hard lesson was the live false-accept: with enough ledger facts, *some* pairwise derivation collides with almost any low-precision figure, so derived matches now have to earn trust with precision. Too loose is theater; too strict and every answer degrades — tuning that boundary was the most interesting engineering here.
+**Hardest part:** the numeric-provenance verifier. Extracting "numbers the model claims" from free text sounds trivial and isn't just percents vs fractions, rounding, complements, currency, customer IDs that look like numbers. The genuinely hard lesson was the live false-accept: with enough ledger facts, *some* pairwise derivation collides with almost any low-precision figure, so derived matches now have to earn trust with precision. Too loose is theater; too strict and every answer degrades — tuning that boundary was the most interesting engineering here.
 
 **What I had to figure out:** Groq's lineup had rotated (the brief's Llama models are gone → model became an env var with hardened config errors) · `multiprocessing` spawn re-executes the parent's main module (→ framed-pickle subprocess sandbox) · Groq surfaces model-side tool-call flubs as 400s (→ routed into the JSON-fallback counter) · pandas 3.0 string-dtype changes (→ portable idioms so the notebook also runs on Colab's pandas 2.x).
 
 **The extra time went into the optional React stage.** Once the required pieces were done and deployed, I used the remaining time to build the React + FastAPI app (`react-app/`) with Claude's help and deploy it on Render — which turned out to be a real test of the architecture: because the agent was a clean importable package with an event stream, the entire second interface needed zero changes to the core. Still on the wish list: a critic agent re-deriving each claimed figure independently (the ledger makes that cheap), and a formal eval set with a measured hallucination rate.
 
-## ⏱️ Time log (honest)
+## ⏱️ Time log
 
-Roughly ~10 focused hours for the required scope, AI-assisted end-to-end, plus extra time for the optional stage:
+Roughly ~10-12 focused hours for the required scope, AI-assisted end-to-end, plus extra time for the optional stage:
 
-- **Studying & understanding the problem** — reading the brief, profiling the dataset — *~1h*
+- **Studying & understanding the problem** — reading the brief, profiling the dataset, Some research about the problem — *~1h*
 - **Planning** — architecture, tools & techniques, what to build in what order — *~1h*
 - **Model training & evaluation** — data cleaning, notebook EDA, model comparison, metric justification — *~2h*
 - **Building the agent** — sandbox, tools, provenance verifier, plan-act-check loop, offline tests, live testing against Groq — *~3.5h*
-- **Building the Streamlit app** — chat UI wired to the agent, error handling — *~1h*
+- **Building the Streamlit app** — chat UI wired to the agent, error handling, testing — *~0.5h*
 - **GitHub, README & documentation** — incremental commits, README, PDF report — *~1h*
 - **Deployment** — Streamlit Cloud, Dockerfile — *~0.5h*
-- **Extra time** — built the React + FastAPI app with Claude and deployed it on Render — *~2h*
+- **Extra time** — built the React + FastAPI app with Claude and deployed it on Render and its setup + crafting and sharpening — *~2h*
