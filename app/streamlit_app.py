@@ -88,7 +88,7 @@ def _verification_caption(result) -> str | None:
 
 
 config = AgentConfig.from_env()
-metrics = _warm_up()
+_warm_up()
 
 with st.sidebar:
     st.title("📉 Churn Analyst")
@@ -97,10 +97,6 @@ with st.sidebar:
         "dataset. It plans, computes with real tools, self-checks, and every "
         "number in an answer is verified against an actually-computed result."
     )
-    if metrics:
-        st.metric("Model PR-AUC", metrics.get("PR-AUC"))
-        st.metric("Model ROC-AUC", metrics.get("ROC-AUC"))
-    st.caption(f"provider: `{config.base_url.split('/')[2]}` · model: `{config.model}`")
     if st.button("↺ Reset conversation"):
         _get_agent().reset()
         st.session_state.messages = []
